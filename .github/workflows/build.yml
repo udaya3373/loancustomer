@@ -12,15 +12,18 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Remove problematic PPA
-        run: |
-          sudo add-apt-repository --remove ppa:openjdk-r/ppa
-          sudo apt-get update
+      - name: Cache Android build tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
 
       - name: Build debug APK
-        uses: ArtemSBulgakov/buildozer-action@v1
-        with:
-          command: buildozer android debug
+        run: |
+          docker run --rm \
+            --volume "$GITHUB_WORKSPACE":/home/user/hostcwd \
+            --volume "$HOME/.buildozer":/home/user/.buildozer \
+            kivy/buildozer:latest android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
