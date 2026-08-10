@@ -12,6 +12,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Remove problematic PPA
+        run: |
+          sudo add-apt-repository --remove ppa:openjdk-r/ppa
+          sudo apt-get update
+
       - name: Build debug APK
         uses: ArtemSBulgakov/buildozer-action@v1
         with:
