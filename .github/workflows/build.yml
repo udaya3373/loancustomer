@@ -1,46 +1,48 @@
-name: Build Android APK
+name: Build Signed APK
 
 on:
-  workflow_dispatch:
   push:
-    branches: [main, master]
+    branches: [ main ]
 
 jobs:
-  build-apk:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ubuntu-24.04
+
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Cache Android build tools
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer
-          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
-
-      - name: Build debug APK
+      # Step 1: Decode Keystore from base64
+      - name: Decode Keystore
         run: |
-          docker run --rm --user root --entrypoint /bin/sh \
-            --volume "$GITHUB_WORKSPACE":/home/user/hostcwd \
-            --volume "$HOME/.buildozer":/home/user/.buildozer \
-            --workdir /home/user/hostcwd \
-            kivy/buildozer:latest -c '
-              apt-get update &&
-              apt-get install --yes --no-install-recommends wget python3-pip openjdk-11-jdk zip unzip zlib1g-dev build-essential &&
-              python3 -m pip install --upgrade pip &&
-              pip3 install --no-cache-dir buildozer cython &&
-              if ! getent passwd user > /dev/null; then
-                useradd --non-unique --uid "$(stat --format=%u /home/user/hostcwd)" \
-                  --create-home --shell /bin/bash user
-              fi &&
-              chown --recursive user:user /home/user &&
-              su user -c "cd /home/user/hostcwd && buildozer android debug"
-            '
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android.jks
 
-      - name: Upload APK
+      # Step 2: Build Release APK using Buildozer
+      - name: Build Release APK
+        uses: digreatbrian/buildozer-action@v2
+        with:
+          python-version: 3.11
+          buildozer-cmd: buildozer -v android release
+
+      # Step 3: Sign the APK manually with .jks keystore
+      - name: Sign the APK manually
+        run: |
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" | head -n 1)
+          jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
+            -keystore android.jks \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEY_PASSWORD }}" \
+            "$APK_PATH" "${{ secrets.KEY_ALIAS }}"
+
+      # Step 4: Rename the signed APK
+      - name: Rename the signed APK
+        run: |
+          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" | head -n 1)
+          NEW_APK_PATH="${APK_PATH/-unsigned/-signed}"
+          mv "$APK_PATH" "$NEW_APK_PATH"
+
+      # Step 5: Upload Signed APK Artifact
+      - name: Upload Signed APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: loanapp-debug-apk
-          path: bin/*.apk
-          if-no-files-found: error
-          retention-days: 14
+          name: signed-release-apk
+          path: ./bin/*-release-signed.apk
