@@ -40,7 +40,11 @@ jobs:
                   --create-home --shell /bin/bash user
               fi &&
               chown --recursive user:user /home/user &&
-              su user -c "cd /home/user/hostcwd && /home/user/.venv/bin/buildozer -v android release"
+              su user -s /bin/bash -c "
+                export PATH=/home/user/.venv/bin:/home/user/.local/bin:\$PATH
+                cd /home/user/hostcwd
+                buildozer -v android release
+              "
             '
 
       - name: Sign release APK
