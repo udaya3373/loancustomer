@@ -42,7 +42,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,pandas,reportlab,openpyxl
+requirements = python3==3.11.8,kivy,pandas,reportlab,openpyxl
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -383,8 +383,8 @@ ios.kivy_ios_branch = master
 # Uncomment to use a custom checkout
 #ios.ios_deploy_dir = ../ios_deploy
 # Or specify URL and branch
-ios.ios_deploy_url = https://github.com/phonegap/ios-deploy
-ios.ios_deploy_branch = 1.12.2
+#ios.ios_deploy_url = https://github.com/phonegap/ios-deploy
+#ios.ios_deploy_branch = 1.12.2
 
 # (bool) Whether or not to sign the code
 ios.codesign.allowed = false
@@ -409,14 +409,14 @@ ios.codesign.allowed = false
 #ios.local_network_usage_description = "<App> needs permissions to <Do X and Y and Z> in your Local Area Network"
 
 # (str) Camera Usage justification string.
-#ios.camera_usage_description = "<App> uses Camera to do <X and Y and Z>"
+#ios.camera_usage_description = "<APP> uses Camera to do <X and Y and Z>"
 
 
 # (bool) Allow StatusBar to be controlled by API
 # ios.viewcontroller_based_statusbar_appearance = False
 
 # (str) A Xml String specifying a extension type.
-#ios.app_extensions = [["7zip", "zip"],  ["public.zip-archive"], "org.kivy.myappextensionfile", "<MyCustom> Extension File", "${MACOSX_BUNDLE_ICON_FILE}", "http://mysite.com/myapp/extensions.html"],
+#ios.app_extensions = [["7zip", "zip"],  ["public.zip-archive"], "org.kivy.myappextensionfile", "<MyCustom> Extension File", "${MACOSX_BUNDLE_ICON_FILE}", "http://mysite.com/myapp/extensions.html[...]
 
 # (str) URL pointing to .ipa file to be installed
 # This option should be defined along with `display_image_url` and `full_size_image_url` options.
@@ -427,7 +427,7 @@ ios.codesign.allowed = false
 #ios.manifest.display_image_url =
 
 # (str) URL pointing to a large icon (512x512px) to be used by iTunes
-# This option should be defined along with `app_url` and `display_image_url` options.
+# This option should be defined along with `app_url` and `full_size_image_url` options.
 #ios.manifest.full_size_image_url =
 
 
