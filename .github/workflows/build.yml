@@ -34,7 +34,7 @@ jobs:
             --workdir /home/user/hostcwd \
             kivy/buildozer:latest -c '
               apt-get update &&
-              apt-get install --yes --no-install-recommends wget &&
+              apt-get install --yes --no-install-recommends wget gettext &&
               if ! getent passwd user > /dev/null; then
                 useradd --non-unique --uid "$(stat --format=%u /home/user/hostcwd)" \
                   --create-home --shell /bin/bash user
