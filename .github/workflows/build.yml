@@ -1,65 +1,59 @@
 name: Build Signed APK
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out source
+        uses: actions/checkout@v4
 
-      # Install libtinfo compatibility (fix for libtinfo5 missing on newer runners)
       - name: Install libtinfo compatibility
         run: |
-          docker run --rm --user root --entrypoint /bin/sh \
-            --volume "$GITHUB_WORKSPACE":/home/user/hostcwd \
-            --volume "$HOME/.buildozer":/home/user/.buildozer \
-            --workdir /home/user/hostcwd \
-            kivy/buildozer:latest -c '
-              apt-get update &&
-              apt-get install --yes --no-install-recommends wget &&
-              if ! getent passwd user > /dev/null; then
-                useradd --non-unique --uid "$(stat --format=%u /home/user/hostcwd)" \
-                  --create-home --shell /bin/bash user
-              fi &&
-              chown --recursive user:user /home/user &&
-              su user -c "cd /home/user/hostcwd && buildozer android debug"
+          sudo apt-get update
+          sudo apt-get install --yes libtinfo6 libncurses5 || true
+          if [ -f /lib/x86_64-linux-gnu/libtinfo.so.6 ]; then
+            sudo ln -sf /lib/x86_64-linux-gnu/libtinfo.so.6 \
+              /usr/lib/x86_64-linux-gnu/libtinfo.so.5
+          fi
 
-      # Step 1: Decode Keystore from base64
-      - name: Decode Keystore
+      - name: Decode keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android.jks
+          test -n "$KEYSTORE_BASE64"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android.jks
 
-      # Step 2: Build Release APK using Buildozer
-      - name: Build Release APK
+      - name: Build release APK
         uses: digreatbrian/buildozer-action@v2
         with:
-          python-version: 3.12
+          python-version: '3.11'
           buildozer-cmd: buildozer -v android release
 
-      # Step 3: Sign the APK manually with .jks keystore
-      - name: Sign the APK manually
+      - name: Sign release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" | head -n 1)
+          APK_PATH="$(find ./bin -name '*-release-unsigned.apk' -print -quit)"
+          test -n "$APK_PATH"
           jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 \
             -keystore android.jks \
-            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEY_PASSWORD }}" \
-            "$APK_PATH" "${{ secrets.KEY_ALIAS }}"
+            -storepass "$KEYSTORE_PASSWORD" \
+            -keypass "$KEY_PASSWORD" \
+            "$APK_PATH" "$KEY_ALIAS"
+          mv "$APK_PATH" "${APK_PATH/-unsigned/-signed}"
 
-      # Step 4: Rename the signed APK
-      - name: Rename the signed APK
-        run: |
-          APK_PATH=$(find ./bin -name "*-release-unsigned.apk" | head -n 1)
-          NEW_APK_PATH="${APK_PATH/-unsigned/-signed}"
-          mv "$APK_PATH" "$NEW_APK_PATH"
-
-      # Step 5: Upload Signed APK Artifact
-      - name: Upload Signed APK Artifact
+      - name: Upload signed APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: signed-release-apk
           path: ./bin/*-release-signed.apk
+          if-no-files-found: error
+          retention-days: 14
