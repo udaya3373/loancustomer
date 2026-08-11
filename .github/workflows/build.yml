@@ -26,7 +26,9 @@ jobs:
             --workdir /home/user/hostcwd \
             kivy/buildozer:latest -c '
               apt-get update &&
-              apt-get install --yes --no-install-recommends wget &&
+              apt-get install --yes --no-install-recommends wget python3-pip openjdk-11-jdk zip unzip zlib1g-dev build-essential &&
+              python3 -m pip install --upgrade pip &&
+              pip3 install --no-cache-dir buildozer cython &&
               if ! getent passwd user > /dev/null; then
                 useradd --non-unique --uid "$(stat --format=%u /home/user/hostcwd)" \
                   --create-home --shell /bin/bash user
