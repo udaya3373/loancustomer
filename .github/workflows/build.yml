@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
@@ -14,12 +14,19 @@ jobs:
       # Install libtinfo compatibility (fix for libtinfo5 missing on newer runners)
       - name: Install libtinfo compatibility
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libtinfo6 libncurses5 || true
-          # Create compatibility symlink if a program expects libtinfo.so.5
-          if [ -f /lib/x86_64-linux-gnu/libtinfo.so.6 ]; then
-            sudo ln -sf /lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5 || true
-          fi
+          docker run --rm --user root --entrypoint /bin/sh \
+            --volume "$GITHUB_WORKSPACE":/home/user/hostcwd \
+            --volume "$HOME/.buildozer":/home/user/.buildozer \
+            --workdir /home/user/hostcwd \
+            kivy/buildozer:latest -c '
+              apt-get update &&
+              apt-get install --yes --no-install-recommends wget &&
+              if ! getent passwd user > /dev/null; then
+                useradd --non-unique --uid "$(stat --format=%u /home/user/hostcwd)" \
+                  --create-home --shell /bin/bash user
+              fi &&
+              chown --recursive user:user /home/user &&
+              su user -c "cd /home/user/hostcwd && buildozer android debug"
 
       # Step 1: Decode Keystore from base64
       - name: Decode Keystore
@@ -30,7 +37,7 @@ jobs:
       - name: Build Release APK
         uses: digreatbrian/buildozer-action@v2
         with:
-          python-version: 3.11
+          python-version: 3.12
           buildozer-cmd: buildozer -v android release
 
       # Step 3: Sign the APK manually with .jks keystore
