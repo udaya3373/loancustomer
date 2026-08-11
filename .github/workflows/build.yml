@@ -13,14 +13,11 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Install libtinfo compatibility
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes libtinfo6 libncurses5 || true
-          if [ -f /lib/x86_64-linux-gnu/libtinfo.so.6 ]; then
-            sudo ln -sf /lib/x86_64-linux-gnu/libtinfo.so.6 \
-              /usr/lib/x86_64-linux-gnu/libtinfo.so.5
-          fi
+      - name: Cache Android build tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.buildozer
+          key: buildozer-${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
 
       - name: Decode keystore
         env:
@@ -30,10 +27,21 @@ jobs:
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > android.jks
 
       - name: Build release APK
-        uses: digreatbrian/buildozer-action@v2
-        with:
-          python-version: '3.11'
-          buildozer-cmd: buildozer -v android release
+        run: |
+          docker run --rm --user root --entrypoint /bin/sh \
+            --volume "$GITHUB_WORKSPACE":/home/user/hostcwd \
+            --volume "$HOME/.buildozer":/home/user/.buildozer \
+            --workdir /home/user/hostcwd \
+            kivy/buildozer:latest -c '
+              apt-get update &&
+              apt-get install --yes --no-install-recommends wget &&
+              if ! getent passwd user > /dev/null; then
+                useradd --non-unique --uid "$(stat --format=%u /home/user/hostcwd)" \
+                  --create-home --shell /bin/bash user
+              fi &&
+              chown --recursive user:user /home/user &&
+              su user -c "cd /home/user/hostcwd && buildozer -v android release"
+            '
 
       - name: Sign release APK
         env:
