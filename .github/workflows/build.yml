@@ -20,10 +20,15 @@ jobs:
 
       - name: Build debug APK
         run: |
-          docker run --rm \
+          docker run --rm --user root \
             --volume "$GITHUB_WORKSPACE":/home/user/hostcwd \
             --volume "$HOME/.buildozer":/home/user/.buildozer \
-            kivy/buildozer:latest android debug
+            --workdir /home/user/hostcwd \
+            kivy/buildozer:latest sh -c '
+              apt-get update &&
+              apt-get install --yes --no-install-recommends wget &&
+              su user -c "cd /home/user/hostcwd && buildozer android debug"
+            '
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
