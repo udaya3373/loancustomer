@@ -27,7 +27,7 @@ jobs:
             kivy/buildozer:latest -c '
               apt-get update &&
               apt-get install --yes --no-install-recommends wget &&
-              su user -c "cd /home/user/hostcwd && buildozer android debug"
+              buildozer android debug
             '
 
       - name: Upload APK
