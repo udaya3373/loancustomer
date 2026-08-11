@@ -11,6 +11,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Install libtinfo compatibility (fix for libtinfo5 missing on newer runners)
+      - name: Install libtinfo compatibility
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libtinfo6 libncurses5 || true
+          # Create compatibility symlink if a program expects libtinfo.so.5
+          if [ -f /lib/x86_64-linux-gnu/libtinfo.so.6 ]; then
+            sudo ln -sf /lib/x86_64-linux-gnu/libtinfo.so.6 /usr/lib/x86_64-linux-gnu/libtinfo.so.5 || true
+          fi
+
       # Step 1: Decode Keystore from base64
       - name: Decode Keystore
         run: |
