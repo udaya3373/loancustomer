@@ -42,7 +42,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3==3.11.8,kivy,pandas,reportlab,openpyxl
+requirements = python3,kivy,pandas,reportlab,openpyxl
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -346,7 +346,7 @@ android.release_artifact = apk
 
 # (str) The directory in which python-for-android should look for your own build recipes (if any)
 #p4a.local_recipes =
-
+p4a.branch = v2024.01.21
 # (str) Filename to the hook for p4a
 #p4a.hook =
 
