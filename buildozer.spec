@@ -346,7 +346,8 @@ android.release_artifact = apk
 
 # (str) The directory in which python-for-android should look for your own build recipes (if any)
 #p4a.local_recipes =
-p4a.branch = v2024.01.21
+#p4a.branch = v2024.01.21
+p4a.branch = v2023.09.16
 # (str) Filename to the hook for p4a
 #p4a.hook =
 
